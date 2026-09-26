@@ -1,0 +1,5 @@
+node_modules/
+*.zip
+DEMO/shots/
+Thumbs.db
+.DS_Store

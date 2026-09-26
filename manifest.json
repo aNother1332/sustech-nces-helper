@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "南科大选课评教助手 (TIS × NCES)",
+  "version": "1.0.1",
+  "description": "在教务系统「我要选课」「加课申请」页面，鼠标悬停课程行即可查看 NCES 评分、热门评价与同课程各教师评分对比。",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://ncesnext.com/*",
+    "https://*.ncesnext.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://tis.sustech.edu.cn/*"],
+      "js": ["card.js", "content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

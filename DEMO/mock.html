@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>NCES Card Visual Demo</title>
+<style>
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: #eef1f5; margin: 0; }
+  .bar { padding: 14px 20px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); display: flex; gap: 8px; flex-wrap: wrap; }
+  button { padding: 8px 14px; border-radius: 8px; border: 1px solid #ccd3dc; background: #fff; cursor: pointer; font-size: 13px; }
+  button.on { background: #0a84ff; color: #fff; border-color: #0a84ff; }
+  .stage { height: 400px; background: linear-gradient(180deg, #f7f9fc, #e8edf4); border-bottom: 1px solid #dde3ea;
+           display:flex; align-items:center; justify-content:center; color:#98a2b3; font-size: 14px; }
+  table { border-collapse: collapse; margin: 30px auto; background: #fff; }
+  th, td { border: 1px solid #dde3ea; padding: 10px 16px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button data-s="loading">① Loading</button>
+  <button data-s="data">② Full data</button>
+  <button data-s="mismatch">③ Teacher mismatch</button>
+  <button data-s="notfound">④ Not found</button>
+  <button data-s="error">⑤ Error</button>
+</div>
+<div class="stage">Card anchors below the pointer position (440, 90)</div>
+<table>
+  <tr><td>mock TIS page background</td><td>BIOS222</td><td>植物应用之插花技艺</td></tr>
+</table>
+<script src="../card.js"></script>
+<script>
+  // Real data fetched live from ncesnext.com (course IPE112, teacher 杨晗旭)
+  const DATA = {
+    available: true, code: "IPE112", name: "马克思主义基本原理",
+    ncesTeacher: "杨晗旭", tisTeachers: ["杨晗旭"], teacherMatched: true, teacherMismatch: false,
+    termId: "20261", rating: 9.07843, reviewCount: 51, currentTermIncluded: true,
+    semesters: ["2026秋", "2025春", "2025秋", "2024春"],
+    detailUrl: "https://ncesnext.com/course/560/",
+    dims: [
+      { key: "difficulty", label: "难度", pct: 98.04, grade: "简单" },
+      { key: "workload", label: "作业量", pct: 98.04, grade: "很少" },
+      { key: "grading", label: "给分", pct: 96.08, grade: "友好" },
+      { key: "takeaways", label: "收获", pct: 39.22, grade: "一般" },
+    ],
+    reviews: [
+      { user: "Jacob_Chen", term: "2025秋", rate: 10, likes: 3,
+        text: "拿到满绩就给10分——聆听吧，大地！仰望吧，苍穹！在这尘世与真理的交汇之处，杨老师的思政课堂冉冉升起，如同奥林匹斯山巅的启明星，光耀万丈，刺破蒙昧的永夜！" },
+      { user: "匿名", term: "2024秋", rate: 10, likes: 2,
+        text: "yhx精品好课，作业只有十条小投稿和一个三百字小作文，最后A+。讲课方面很喜欢聊天，聊新闻之类的。至少不会成为反例。" },
+      { user: "匿名", term: "2024秋", rate: 9, likes: 2,
+        text: "事少的没话说，上课十条15-100字投稿20分，一个50-200字问答题20分，平时分10分，期末50分。杨老师确实是给分高人好且讲课比较认真的好老师，推荐所有人冲。" },
+    ],
+    alternatives: [
+      { teacher: "高玉林", rating: 10, reviewCount: 1, currentTerm: false, url: "https://ncesnext.com/course/561/" },
+      { teacher: "尹玮煜", rating: 9.36667, reviewCount: 30, currentTerm: true, url: "https://ncesnext.com/course/562/" },
+      { teacher: "吴清一", rating: 5.33333, reviewCount: 3, currentTerm: false, url: "https://ncesnext.com/course/563/" },
+      { teacher: "夏文斌", rating: 2, reviewCount: 1, currentTerm: false, url: "https://ncesnext.com/course/564/" },
+    ],
+  };
+  const MISMATCH = { ...DATA, teacherMatched: false, teacherMismatch: true, ncesTeacher: "未知教师团队",
+    tisTeachers: ["张三", "李四"], rating: 8.4, reviewCount: 18,
+    alternatives: [
+      { teacher: "王五", rating: 9.1, reviewCount: 22, currentTerm: true, url: "https://ncesnext.com/" },
+      { teacher: "赵六", rating: 6.6, reviewCount: 5, currentTerm: false, url: "https://ncesnext.com/" },
+    ] };
+  const NOTFOUND = { available: false, reason: "评教网站未收录该课程", name: "XXY1001", code: "XXY1001", searchUrl: "https://ncesnext.com/search?q=XXY1001" };
+  const ERROR = { available: false, error: true, reason: "评教网站暂时不可用", name: "IPE112", code: "IPE112", searchUrl: "https://ncesnext.com/search?q=IPE112" };
+
+  const card = new NcesCard.NcesCard();
+  card.mount();
+  const anchor = { x: 440, y: 90, rect: { top: 90, bottom: 210, left: 440, right: 900 } };
+  const states = {
+    loading: { kind: "loading" },
+    data: { kind: "data", data: DATA },
+    mismatch: { kind: "data", data: MISMATCH },
+    notfound: { kind: "data", data: NOTFOUND },
+    error: { kind: "error", data: ERROR },
+  };
+  let current = "data";
+  function set(s) {
+    current = s;
+    document.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.s === s));
+    card.show(states[s], anchor);
+  }
+  document.querySelectorAll("button").forEach(b => b.addEventListener("click", () => set(b.dataset.s)));
+  set("loading");
+  setTimeout(() => { if (current === "loading") set("data"); }, 1200);
+  window.__NCES_MOCK__ = { set };
+</script>
+</body>
+</html>
