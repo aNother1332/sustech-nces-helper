@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "南科大选课评教助手 (TIS × NCES)",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "教务系统助手：选课页悬停查看 NCES 评教（评分/评价/教师对比）；成绩页显示每门课排名、悬停查看分项成绩与整体绩点排名。",
   "permissions": ["storage"],
   "host_permissions": [

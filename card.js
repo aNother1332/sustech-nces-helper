@@ -655,12 +655,15 @@
       const pad = 10;
       const vw = window.innerWidth, vh = window.innerHeight;
       const cw = 400;
+      // 默认在指针右侧；右侧放不下就翻转到指针左侧（贴住指针，而不是跳到行首——
+      // 表格行横跨整表宽，曾导致右侧列悬停时卡片跳到窗口最左边）
       let left = anchor.x + 18;
+      let flipped = false;
       if (left + cw + pad > vw) {
-        left = anchor.rect
-          ? Math.max(pad, Math.min(anchor.rect.left + 8, vw - cw - pad))
-          : Math.max(pad, vw - cw - pad);
+        left = anchor.x - cw - 18;
+        flipped = true;
       }
+      left = Math.max(pad, Math.min(left, Math.max(pad, vw - cw - pad)));
       // 指针下方空间足够则向下展开，否则向上（用 bottom 锚定，卡高自适应）
       const belowSpace = vh - anchor.y - pad;
       const showBelow = belowSpace >= 300 || anchor.y < 220;
@@ -675,7 +678,7 @@
       this.placement = showBelow ? "below" : "above";
       card.classList.toggle("below", showBelow);
       card.classList.toggle("above", !showBelow);
-      card.style.transformOrigin = showBelow ? "top left" : "bottom left";
+      card.style.transformOrigin = `${flipped ? "right" : "left"} ${showBelow ? "top" : "bottom"}`;
     }
 
     /** 淡出后移除 DOM（进出场同路径） */
