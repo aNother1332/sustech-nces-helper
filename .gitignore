@@ -3,3 +3,4 @@ node_modules/
 DEMO/shots/
 Thumbs.db
 .DS_Store
+docs/screenshots/.*

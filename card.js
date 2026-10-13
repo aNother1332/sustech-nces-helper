@@ -198,6 +198,35 @@
     .empty-icon { font-size: 26px; line-height: 1; margin-bottom: 8px; }
     .empty-title { font-size: 14px; font-weight: 600; }
     .empty-sub { font-size: 12px; margin-top: 4px; }
+
+    /* 成绩页：分项成绩 / 整体学分绩 */
+    .rank-hero { display: flex; align-items: center; gap: 14px; padding: 2px 0 10px; }
+    .rank-hero .score-num { font-variant-numeric: tabular-nums; }
+    .badge-grade {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 42px; padding: 3px 10px; border-radius: 10px;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.01em;
+      background: rgba(10, 132, 255, 0.12); color: #0a84ff;
+    }
+    .fx-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 12px; }
+    .fx-name { flex: none; width: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fx-track { flex: 1; height: 7px; border-radius: 4px; background: rgba(120, 120, 128, 0.18); overflow: hidden; }
+    .fx-fill { display: block; height: 100%; border-radius: 4px; background: #0a84ff; transition: width 420ms cubic-bezier(0.25, 1, 0.4, 1); }
+    .fx-score { flex: none; width: 86px; text-align: right; font-variant-numeric: tabular-nums; }
+    .fx-score b { font-weight: 700; }
+    .fx-weight { flex: none; width: 52px; text-align: right; }
+    .gpa-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid rgba(0, 0, 0, 0.06); font-size: 12.5px; }
+    .gpa-term { flex: none; width: 72px; font-weight: 500; }
+    .gpa-track { flex: 1; height: 7px; border-radius: 4px; background: rgba(120, 120, 128, 0.18); overflow: hidden; }
+    .gpa-fill { display: block; height: 100%; border-radius: 4px; background: #30d158; transition: width 420ms cubic-bezier(0.25, 1, 0.4, 1); }
+    .gpa-val { flex: none; width: 84px; text-align: right; font-variant-numeric: tabular-nums; }
+    .gpa-val b { font-weight: 700; }
+
+    @media (prefers-color-scheme: dark) {
+      .gpa-row { border-color: rgba(255, 255, 255, 0.09) !important; }
+      .fx-track, .gpa-track { background: rgba(255, 255, 255, 0.12) !important; }
+      .badge-grade { background: rgba(10, 132, 255, 0.22) !important; color: #6cb2ff !important; }
+    }
   `;
 
   const STAR =
@@ -239,15 +268,23 @@
     return r == null ? "—" : (Math.round(r * 10) / 10).toFixed(1);
   }
 
-  /** 构建（或重建）卡片内容 */
+  /** 构建（或重建）卡片内容。state.kind: loading | data(NCES) | error | fx(分项成绩) | gpa(整体学分绩) */
   function renderContent(root, state) {
     root.textContent = "";
     const card = h("div", "card");
     card.setAttribute("role", "dialog");
-    card.setAttribute("aria-label", "课程评教信息");
+    card.setAttribute("aria-label", "课程信息");
 
     if (state.kind === "loading") {
-      card.appendChild(buildSkeleton());
+      card.appendChild(buildSkeleton(state.src));
+    } else if (state.kind === "fx") {
+      const d = state.data || {};
+      card.appendChild(buildFxHead(d));
+      card.appendChild(buildFxBody(d));
+    } else if (state.kind === "gpa") {
+      const d = state.data || {};
+      card.appendChild(buildGpaHead(d));
+      card.appendChild(buildGpaBody(d));
     } else if (state.kind === "error" || state.data?.available === false) {
       card.appendChild(buildHead(state.data || {}));
       card.appendChild(buildEmpty(state));
@@ -261,8 +298,24 @@
       }
       card.appendChild(buildBody(d));
     }
+    card.appendChild(buildFoot(state));
+    root.appendChild(card);
+    return card;
+  }
 
+  function buildFoot(state) {
     const foot = h("footer", "foot");
+    const isTis = state.kind === "fx" || state.kind === "gpa" || state.src === "tis";
+    if (isTis) {
+      foot.appendChild(h("span", "dim", "数据来自"));
+      const t = h("span", null, "教务系统");
+      t.style.fontWeight = "500";
+      foot.appendChild(t);
+      const tip = h("span", "muted", "· 仅本机展示，请勿外传");
+      tip.style.marginLeft = "auto";
+      foot.appendChild(tip);
+      return foot;
+    }
     const src = h("span", "dim", "数据来自");
     const a = h("a", null, "NCES 评教");
     const url = state.data?.detailUrl || state.data?.searchUrl || "https://ncesnext.com";
@@ -274,10 +327,7 @@
     const tip = h("span", "muted", "· 仅供参考");
     tip.style.marginLeft = "auto";
     foot.appendChild(tip);
-    card.appendChild(foot);
-
-    root.appendChild(card);
-    return card;
+    return foot;
   }
 
   function buildHead(d) {
@@ -403,7 +453,7 @@
     return body;
   }
 
-  function buildSkeleton() {
+  function buildSkeleton(src) {
     const body = h("div", "body");
     const hero = h("div", "hero");
     hero.appendChild(h("div", "sk sk-hero"));
@@ -421,7 +471,7 @@
       l.style.width = w;
       body.appendChild(l);
     }
-    const tip = h("div", "muted", "正在查询 NCES 评教数据…");
+    const tip = h("div", "muted", src === "tis" ? "正在读取成绩明细…" : "正在查询 NCES 评教数据…");
     tip.style.marginTop = "10px";
     tip.style.fontSize = "12px";
     body.appendChild(tip);
@@ -440,6 +490,128 @@
     return empty;
   }
 
+  /* ---------------- 成绩页：分项成绩卡（kind: 'fx'） ---------------- */
+
+  function buildFxHead(d) {
+    const head = h("header", "head");
+    const titles = h("div", "head-titles");
+    titles.appendChild(h("div", "course-name", d.kcmc || d.kcdm || "未知课程"));
+    const meta = h("div", "meta-row");
+    if (d.kcdm) meta.appendChild(h("span", "pill", d.kcdm));
+    if (d.xnxqmc) meta.appendChild(h("span", "pill", d.xnxqmc));
+    if (d.xf != null && d.xf !== "") meta.appendChild(h("span", "pill", `${d.xf} 学分`));
+    if (d.kclb) meta.appendChild(h("span", "pill", d.kclb));
+    titles.appendChild(meta);
+    head.appendChild(titles);
+    return head;
+  }
+
+  function buildFxBody(d) {
+    const body = h("div", "body scroll");
+
+    // hero：总评成绩 + 等级徽章 + 班级排名
+    const hero = h("div", "rank-hero");
+    const score = h("div", "score");
+    score.appendChild(h("span", "score-num", d.zzcj == null || d.zzcj === "" ? "—" : String(d.zzcj)));
+    hero.appendChild(score);
+    const side = h("div", "hero-side");
+    const row1 = h("div", "meta-row");
+    row1.style.marginTop = "0";
+    if (d.xscj) row1.appendChild(h("span", "badge-grade", d.xscj));
+    if (d.pm != null && d.zrs) {
+      row1.appendChild(h("span", "teacher-pill", `排名 ${d.pm} / ${d.zrs}`));
+    } else {
+      row1.appendChild(h("span", "pill", "暂无排名"));
+    }
+    side.appendChild(row1);
+    if (d.pm != null && d.zrs && Number(d.zrs) > 0) {
+      const pct = Math.max(1, Math.ceil((Number(d.pm) / Number(d.zrs)) * 100));
+      side.appendChild(h("div", "review-count dim", `教学班排名 · 位于前 ${pct}%`));
+    }
+    hero.appendChild(side);
+    body.appendChild(hero);
+
+    // 分项成绩
+    const fx = d.fx || [];
+    body.appendChild(h("div", "sec-title", "分项成绩"));
+    if (!fx.length) {
+      body.appendChild(h("div", "muted", "暂无分项明细（可能尚未公布，或该课程不设分项）"));
+    } else {
+      for (const it of fx) {
+        const name = it.FXMC || "—";
+        const df = it.DF == null || it.DF === "" ? null : it.DF;
+        const mf = it.MF == null || it.MF === "" ? null : it.MF;
+        const nd = parseFloat(df), nm = parseFloat(mf);
+        const pct = isFinite(nd) && isFinite(nm) && nm > 0 ? Math.max(0, Math.min(100, (nd / nm) * 100)) : null;
+        const row = h("div", "fx-row");
+        row.appendChild(h("span", "fx-name", name));
+        const track = h("span", "fx-track");
+        const fill = h("span", "fx-fill");
+        fill.style.width = `${pct == null ? 0 : pct}%`;
+        track.appendChild(fill);
+        row.appendChild(track);
+        const sc = h("span", "fx-score");
+        sc.appendChild(h("b", null, df == null ? "—" : String(df)));
+        sc.appendChild(h("span", "dim", ` / ${mf == null ? "—" : mf}`));
+        row.appendChild(sc);
+        row.appendChild(h("span", "fx-weight dim", it.LJFXBZ == null || it.LJFXBZ === "" ? "" : `占 ${it.LJFXBZ}%`));
+        body.appendChild(row);
+      }
+    }
+    return body;
+  }
+
+  /* ---------------- 成绩页：整体学分绩卡（kind: 'gpa'） ---------------- */
+
+  function buildGpaHead() {
+    const head = h("header", "head");
+    const titles = h("div", "head-titles");
+    titles.appendChild(h("div", "course-name", "整体学分绩"));
+    const meta = h("div", "meta-row");
+    meta.appendChild(h("span", "pill", "全部学期"));
+    titles.appendChild(meta);
+    head.appendChild(titles);
+    return head;
+  }
+
+  function buildGpaBody(d) {
+    const body = h("div", "body scroll");
+    const hero = h("div", "rank-hero");
+    const score = h("div", "score");
+    const v = Number(d.pjxfj);
+    score.appendChild(h("span", "score-num", isFinite(v) ? (Math.round(v * 100) / 100).toFixed(2) : "—"));
+    hero.appendChild(score);
+    const side = h("div", "hero-side");
+    const row1 = h("div", "meta-row");
+    row1.style.marginTop = "0";
+    if (d.pm) row1.appendChild(h("span", "teacher-pill", `排名 ${d.pm}`));
+    side.appendChild(row1);
+    side.appendChild(h("div", "review-count dim", "平均学分绩点（满分 4.0）"));
+    hero.appendChild(side);
+    body.appendChild(hero);
+
+    const terms = d.terms || [];
+    if (terms.length) {
+      body.appendChild(h("div", "sec-title", "学期学分绩点"));
+      for (const t of terms) {
+        const row = h("div", "gpa-row");
+        row.appendChild(h("span", "gpa-term", t.XNXQ || "—"));
+        const track = h("span", "gpa-track");
+        const fill = h("span", "gpa-fill");
+        const q = Number(t.xqxfj);
+        fill.style.width = `${isFinite(q) ? Math.max(0, Math.min(100, (q / 4) * 100)) : 0}%`;
+        track.appendChild(fill);
+        row.appendChild(track);
+        const val = h("span", "gpa-val");
+        val.appendChild(h("span", "dim", "学期 "));
+        val.appendChild(h("b", null, isFinite(q) ? (Math.round(q * 100) / 100).toFixed(2) : "—"));
+        row.appendChild(val);
+        body.appendChild(row);
+      }
+    }
+    return body;
+  }
+
   class NcesCard {
     constructor() {
       this.host = document.createElement("div");
@@ -454,20 +626,18 @@
       this.placement = "below";
     }
 
-    /** state: {kind:'loading'} | {kind:'data', data} | {kind:'error', data} */
+    /** state: {kind:'loading',src?} | {kind:'data'|'error', data} | {kind:'fx'|'gpa', data} */
     show(state, anchor /* {x,y,rect:{top,bottom,left,right}} */) {
       const wasShown = !!this.cardEl && this.cardEl.classList.contains("shown");
       const sameData =
-        state.kind === "data" &&
-        this.lastKind === "data" &&
-        this.lastData === state.data;
+        !!state.data && state.kind === this.lastKind && this.lastData === state.data;
       if (this.cardEl && ((state.kind === "loading" && this.lastKind === "loading") || sameData)) {
         // 仅更新位置
         this.place(anchor);
         return;
       }
       this.lastKind = state.kind;
-      this.lastData = state.kind === "data" ? state.data : null;
+      this.lastData = state.data || null;
 
       this.cardEl = renderContent(this.root, state);
       this.place(anchor);

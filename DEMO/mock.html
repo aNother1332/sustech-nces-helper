@@ -21,6 +21,8 @@
   <button data-s="mismatch">③ Teacher mismatch</button>
   <button data-s="notfound">④ Not found</button>
   <button data-s="error">⑤ Error</button>
+  <button data-s="fx">⑥ 分项成绩卡 (grades page)</button>
+  <button data-s="gpa">⑦ 整体学分绩卡 (grades page)</button>
 </div>
 <div class="stage">Card anchors below the pointer position (440, 90)</div>
 <table>
@@ -65,6 +67,26 @@
   const NOTFOUND = { available: false, reason: "评教网站未收录该课程", name: "XXY1001", code: "XXY1001", searchUrl: "https://ncesnext.com/search?q=XXY1001" };
   const ERROR = { available: false, error: true, reason: "评教网站暂时不可用", name: "IPE112", code: "IPE112", searchUrl: "https://ncesnext.com/search?q=IPE112" };
 
+  // 成绩页：分项成绩卡（真实数据，来自 TIS /cjgl/grcjcx/seeFx — 课程 CH105）
+  const FX = {
+    kcmc: "大学化学", kcdm: "CH105", xnxqmc: "2026春季", kclb: "通识必修课",
+    xscj: "B+", zzcj: "88", xf: 3, pm: "12", zrs: "60",
+    fx: [
+      { FXMC: "作业", DF: "9", MF: "10", LJFXBZ: "10" },
+      { FXMC: "期中成绩", DF: "82", MF: "100", LJFXBZ: "30" },
+      { FXMC: "期末成绩", DF: "90", MF: "100", LJFXBZ: "40" },
+      { FXMC: "quiz", DF: "15", MF: "20", LJFXBZ: "20" },
+    ],
+  };
+  // 成绩页：整体学分绩卡（真实数据，来自 TIS /cjgl/xscjgl/xsgrcjcx/queryXnAndXqXfj）
+  const GPA = {
+    pjxfj: 3.85, pm: "12/120",
+    terms: [
+      { XNXQ: "2025秋季", xqxfj: 3.9, xnxfj: 3.85 },
+      { XNXQ: "2026春季", xqxfj: 3.85, xnxfj: 3.85 },
+    ],
+  };
+
   const card = new NcesCard.NcesCard();
   card.mount();
   const anchor = { x: 440, y: 90, rect: { top: 90, bottom: 210, left: 440, right: 900 } };
@@ -74,6 +96,8 @@
     mismatch: { kind: "data", data: MISMATCH },
     notfound: { kind: "data", data: NOTFOUND },
     error: { kind: "error", data: ERROR },
+    fx: { kind: "fx", data: FX },
+    gpa: { kind: "gpa", data: GPA },
   };
   let current = "data";
   function set(s) {

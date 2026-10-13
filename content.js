@@ -219,11 +219,14 @@
   document.addEventListener(
     "pointerover",
     (e) => {
+      // 自愈：卡片被滚动/Esc/窗口失焦等原因关闭时，鼠标可能并未真正离开影子宿主，
+      // 会导致 pointerInCard 卡死、后续悬停失效。用 :hover 实测校正。
+      if (pointerInCard && !card.host.matches(":hover")) pointerInCard = false;
       if (pointerInCard) return;
       const tr = trFromEvent(e);
       if (!tr) return;
       cancelHide();
-      if (tr === hoverTr) {
+      if (tr === hoverTr && card.cardEl) {
         // iView 翻页可能复用同一 <tr> 元素并替换内容：内容变了要当作新行重新弹卡
         if (!hoverInfo) return; // 意图计时器已在处理本次 hover
         const fresh = parseRow(tr);
